@@ -4,6 +4,7 @@ import 'package:ionicons/ionicons.dart';
 import 'package:warehouse_app/Components/constants.dart';
 import 'package:warehouse_app/Components/reusable_button.dart';
 import 'package:adaptive_dialog/adaptive_dialog.dart';
+import 'package:warehouse_app/Screens/dashboard.dart';
 
 class LoginScreen extends StatefulWidget {
   static String id = 'login_screen';
@@ -38,7 +39,7 @@ class _LoginScreenState extends State<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               Container(
-                height: 100,
+                height: 200,
                 child: Image.asset('images/logo.png'),
               ),
               const SizedBox(
@@ -46,7 +47,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               TextField(
                 keyboardType: TextInputType.emailAddress,
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.openSans(
                     textStyle: const TextStyle(
                       fontSize: 15.0,
                       fontWeight: FontWeight.bold,
@@ -67,7 +68,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               TextField(
                   obscureText: true,
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.openSans(
                       textStyle: const TextStyle(
                         fontSize: 15.0,
                         fontWeight: FontWeight.bold,
@@ -92,10 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   if (email == 'test' && password == '123') {
                     // Navigator.pushNamed(context, AdminPanel.id);
-                    showOkAlertDialog(
-                        context: context,
-                        title: 'Success',
-                        message: 'login success');
+                    Navigator.pushNamed(context, UserDashboard.id);
                   } else {
                     // Navigator.pushNamed(context, UserDashboard.id);
                     showOkAlertDialog(

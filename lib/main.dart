@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:warehouse_app/Screens/login_screen.dart';
 import 'package:warehouse_app/Screens/splash_screen.dart';
 import 'package:warehouse_app/Screens/dashboard.dart';
+import 'package:warehouse_app/Screens/task_detal.dart';
 
 void main() {
   runApp(const MyApp());
@@ -17,7 +18,7 @@ class MyApp extends StatelessWidget {
         LoadingScreen.id: (context) => const LoadingScreen(),
         LoginScreen.id: (context) => const LoginScreen(),
         UserDashboard.id: (context) => UserDashboard(),
-        // AdminPanel.id: (context) => AdminPanel(),
+        TaskDetail.id: (context) => TaskDetail(),
         // AdminPay.id: (context) => AdminPay(),
         // AddStudents.id: (context) => AddStudents(),
         // AdminStudents.id: (context) => AdminStudents(),

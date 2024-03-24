@@ -8,6 +8,7 @@ import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:warehouse_app/Screens/dashboard.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   static String id = 'login_screen';
@@ -39,15 +40,18 @@ class _LoginScreenState extends State<LoginScreen> {
       "password": password
     };
 
-    var response = await http.post(Uri.parse('https://smartallocbe.azurewebsites.net/login'),
+    var response = await http.post(Uri.parse('https://smartallocbe.azurewebsites.net/user/login'),
     headers: {"Content-Type": "application/json"},
     body: jsonEncode(reqBody));
+
+var jsonResponse = jsonDecode(response.body);
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('access_token', jsonResponse['access_token']);
 
     setState(() {
       _isLoading = false;
     });
-
-    var jsonResponse = jsonDecode(response.body);
 
     if (jsonResponse['access_token'] == null) {
       return false;

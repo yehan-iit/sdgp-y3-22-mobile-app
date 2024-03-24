@@ -5,6 +5,10 @@ import 'package:warehouse_app/Components/reusable_card.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:warehouse_app/Screens/task_detal.dart';
 import 'login_screen.dart';
+import 'dart:convert';
+import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 
 class UserDashboard extends StatefulWidget {
   static String id = 'user dashboard';
@@ -14,6 +18,67 @@ class UserDashboard extends StatefulWidget {
 }
 
 class _UserDashboardState extends State<UserDashboard> {
+
+ List<String> statuses = ['Created','Assigned','Started', 'Completed'];
+  List<TaskCard>? _taskCardsList;
+
+  Future<List<TaskCard>> getUserTasks() async {
+
+    final prefs = await SharedPreferences.getInstance();
+    final accessToken = prefs.getString('access_token');
+
+
+    var response = await http.post(Uri.parse('https://smartallocbe.azurewebsites.net/task/peruser'),
+        headers: {"Authorization": "Bearer $accessToken","Content-Type": "application/json"});
+
+    if (response.statusCode == 401) {
+      // Unauthorized, throw an exception
+      print('Unauthorized');
+      throw Exception('Unauthorized');
+    }
+
+    var tasks = jsonDecode(response.body);
+
+    List<TaskCard> taskCards= [];
+    for (var task in tasks) {
+      taskCards.add(TaskCard(id: task['id'],title: task['title'], priority: task['priority'], date: parseAndFormatDate(task['deadline']), status: statuses[task['status']],description: task['description'],estTime: task['allocatedTime']));
+    }
+
+    return taskCards;
+  }
+
+  String parseAndFormatDate(String dateString) {
+    DateTime parsedDate = DateTime.parse(dateString);
+
+    DateFormat outputFormat = DateFormat('dd MMMM yyyy');
+
+    String formattedDate = outputFormat.format(parsedDate);
+
+    return formattedDate;
+  }
+
+  void fetchInitialData() async {
+    try {
+      var tasks = await getUserTasks();
+      setState(() {
+        _taskCardsList = tasks;
+      });
+    } on Exception catch (e) {
+      print(e.toString());
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Navigate to the login screen or another appropriate screen
+        Navigator.pushReplacementNamed(context, LoginScreen.id);
+      });
+    }
+
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    fetchInitialData();
+  }
+
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -52,28 +117,47 @@ class _UserDashboardState extends State<UserDashboard> {
             borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(20),
                 topRight: Radius.circular(20))),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-                margin: const EdgeInsets.fromLTRB(15, 5, 0, 10),
-                child:Text(
-                    'Your Tasks',
-                    style: GoogleFonts.raleway(
-                        fontWeight: FontWeight.bold, fontSize: 30.0,
-                        color: Colors.black),
-                    overflow: TextOverflow.ellipsis
-                )
-            ),
-            TaskCard(title: 'Transferring New Order Items', priority: 'High', date: '2021 June 20', status: 'Assigned'),
-            TaskCard(title: 'Shipping Orders', priority: 'Medium', date: '2021 June 20', status: 'Started'),
-            TaskCard(title: 'Picking New Orders', priority: 'Medium', date: '2021 June 20', status: 'Completed'),
-            TaskCard(title: 'Removing Shipment From Bay', priority: 'Low', date: '2021 June 20', status: 'Completed'),
-            TaskCard(title: 'Removing Shipment From Bay', priority: 'Low', date: '2021 June 20', status: 'Completed'),
-          ],
-        ),
-        )
+       child: RefreshIndicator(
+          onRefresh: () async {
+            fetchInitialData();
+          },
+          child: SingleChildScrollView(
+            physics: AlwaysScrollableScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                  margin: const EdgeInsets.fromLTRB(15, 5, 0, 10),
+                  child:Text(
+                      'Your Tasks',
+                      style: GoogleFonts.raleway(
+                          fontWeight: FontWeight.bold, fontSize: 30.0,
+                          color: Colors.black),
+                      overflow: TextOverflow.ellipsis
+                  )
+              ),
+               FutureBuilder<List<TaskCard>>(future: getUserTasks(), builder: (context,snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  // Show loading indicator while waiting for the data
+                  return Container(
+                      margin: EdgeInsets.fromLTRB(0, MediaQuery.of(context).size.width * 0.5, 0,0),
+                      child: Center(child: CircularProgressIndicator()));
+                } else if (snapshot.hasError) {
+                  String errorString = snapshot.error.toString();
+                  if (errorString.contains('Unauthorized')) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      // Navigate to the login screen or another appropriate screen
+                      Navigator.pushReplacementNamed(context, LoginScreen.id);
+                    });
+                  }
+                    return Text('Error: ${snapshot.error}');
+                } else {
+                  return Column(children: snapshot.data!);
+                }
+              }),
+            ],
+          ),
+          ),
       )
         )
         ,])
@@ -111,13 +195,14 @@ class _UserDashboardState extends State<UserDashboard> {
   }
 }
 
-class TaskCard extends StatelessWidget {
- final String status;
+class TaskCard extends StatelessWidget {final String status;
+ final int id;
  final String date;
  final String priority;
  final String title;
-  TaskCard({required this.title, required this.priority,required this.date,required this.status});
-
+ final String description;
+final int estTime;
+  TaskCard({required this.id,required this.title, required this.priority,required this.date,required this.status,required this.description,required this.estTime});
   @override
   Widget build(BuildContext context) {
     Color priorityContColor = Colors.black;
@@ -214,7 +299,15 @@ class TaskCard extends StatelessWidget {
               ],
             )]),
       onpressed: () {
-        Navigator.pushNamed(context, TaskDetail.id);
+        Navigator.pushNamed(context, TaskDetail.id,arguments: {
+          'id': id,
+          'title': title,
+          'priority': priority,
+          'date': date,
+          'status': status,
+          'description': description,
+          'estTime': estTime,
+        },);
       },
     );
   }

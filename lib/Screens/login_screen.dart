@@ -7,8 +7,8 @@ import 'package:warehouse_app/Components/reusable_button.dart';
 import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:warehouse_app/Screens/dashboard.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 
 class LoginScreen extends StatefulWidget {
   static String id = 'login_screen';
@@ -44,7 +44,7 @@ class _LoginScreenState extends State<LoginScreen> {
     headers: {"Content-Type": "application/json"},
     body: jsonEncode(reqBody));
 
-var jsonResponse = jsonDecode(response.body);
+    var jsonResponse = jsonDecode(response.body);
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('access_token', jsonResponse['access_token']);

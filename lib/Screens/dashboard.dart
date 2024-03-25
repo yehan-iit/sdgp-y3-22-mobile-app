@@ -1,13 +1,13 @@
+import 'dart:convert';
+import 'package:intl/intl.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:warehouse_app/Components/reusable_card.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:warehouse_app/Screens/task_detal.dart';
-import 'login_screen.dart';
-import 'dart:convert';
-import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'login_screen.dart';
 import 'package:http/http.dart' as http;
 
 class UserDashboard extends StatefulWidget {
@@ -19,7 +19,7 @@ class UserDashboard extends StatefulWidget {
 
 class _UserDashboardState extends State<UserDashboard> {
 
- List<String> statuses = ['Created','Assigned','Started', 'Completed'];
+  List<String> statuses = ['Created','Assigned','Started', 'Completed','Bug','Cancelled'];
   List<TaskCard>? _taskCardsList;
 
   Future<List<TaskCard>> getUserTasks() async {
@@ -117,7 +117,7 @@ class _UserDashboardState extends State<UserDashboard> {
             borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(20),
                 topRight: Radius.circular(20))),
-       child: RefreshIndicator(
+        child: RefreshIndicator(
           onRefresh: () async {
             fetchInitialData();
           },
@@ -150,6 +150,7 @@ class _UserDashboardState extends State<UserDashboard> {
                       Navigator.pushReplacementNamed(context, LoginScreen.id);
                     });
                   }
+                  print('Error: ${snapshot.error}');
                     return Text('Error: ${snapshot.error}');
                 } else {
                   return Column(children: snapshot.data!);
@@ -158,6 +159,7 @@ class _UserDashboardState extends State<UserDashboard> {
             ],
           ),
           ),
+        )
       )
         )
         ,])
@@ -200,9 +202,10 @@ class TaskCard extends StatelessWidget {final String status;
  final String date;
  final String priority;
  final String title;
- final String description;
+final String description;
 final int estTime;
   TaskCard({required this.id,required this.title, required this.priority,required this.date,required this.status,required this.description,required this.estTime});
+
   @override
   Widget build(BuildContext context) {
     Color priorityContColor = Colors.black;

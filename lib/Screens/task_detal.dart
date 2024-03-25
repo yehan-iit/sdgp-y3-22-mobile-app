@@ -1,5 +1,9 @@
+import 'dart:convert';
+import 'login_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 
 class TaskDetail extends StatefulWidget {
   static String id = 'Task Detail';
@@ -9,7 +13,98 @@ class TaskDetail extends StatefulWidget {
 }
 
 class _TaskDetailState extends State<TaskDetail> {
-  Widget? getButtons(status) {
+  Future<String?> updateStatus(taskId,status) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final accessToken = prefs.getString('access_token');
+
+      var reqBody = {
+        "taskId": taskId,
+        "status": status
+      };
+
+      var response = await http.post(Uri.parse('https://smartallocbe.azurewebsites.net/task/update/status'),
+          headers: {"Authorization": "Bearer $accessToken","Content-Type": "application/json"},
+          body: jsonEncode(reqBody));
+
+      if (response.statusCode == 401) {
+        // Unauthorized, throw an exception
+        print('Unauthorized');
+        throw Exception('Unauthorized');
+      }
+
+      var task = jsonDecode(response.body);
+      print(task.id);
+      if (task.id == null) {
+          return null;
+      } else {
+        return 'Success';
+      }
+    } on Exception catch (e) {
+      print(e.toString());
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Navigate to the login screen or another appropriate screen
+        Navigator.pushReplacementNamed(context, LoginScreen.id);
+      });
+      return null;
+    }
+  }
+
+  Future<String?> updateStatusHistory(taskId,status,reason,historyStatus) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final accessToken = prefs.getString('access_token');
+
+      var reqBody = {
+        "taskId": taskId,
+        "status": status
+      };
+
+      var response = await http.post(Uri.parse('https://smartallocbe.azurewebsites.net/task/update/status'),
+          headers: {"Authorization": "Bearer $accessToken","Content-Type": "application/json"},
+          body: jsonEncode(reqBody));
+
+      if (response.statusCode == 401) {
+        // Unauthorized, throw an exception
+        print('Unauthorized');
+        throw Exception('Unauthorized');
+      }
+
+      var task = jsonDecode(response.body);
+      print(task.id);
+
+      var historyReqBody = {
+        "taskId": taskId,
+        "reason": reason,
+        "status": historyStatus
+      };
+
+      response = await http.post(Uri.parse('https://smartallocbe.azurewebsites.net/history'),
+          headers: {"Authorization": "Bearer $accessToken","Content-Type": "application/json"},
+          body: jsonEncode(historyReqBody));
+
+      if (response.statusCode == 401) {
+        // Unauthorized, throw an exception
+        print('Unauthorized');
+        throw Exception('Unauthorized');
+      }
+
+      var historyRec = jsonDecode(response.body);
+      if (task.id == null) {
+        return null;
+      } else {
+        return 'Success';
+      }
+    } on Exception catch (e) {
+      print(e.toString());
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Navigate to the login screen or another appropriate screen
+        Navigator.pushReplacementNamed(context, LoginScreen.id);
+      });
+      return null;
+    }
+  }
+  Widget? getButtons(taskId,status) {
     if (status == 'Assigned') {
       return Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -22,11 +117,12 @@ class _TaskDetailState extends State<TaskDetail> {
                   blurRadius: 5,
                   color: Colors.black.withOpacity(.08),
                 )
-            ],),
+              ],),
             child: TextButton(
-              onPressed: () {
+              onPressed: () async{
                 // Action to perform on button press
-                print('TextButton Pressed!');
+                var answer = await updateStatusHistory(taskId,0,'users rejected the task','reject');
+                print(answer);
               },
               style: TextButton.styleFrom(
                 backgroundColor: const Color(0xFFf9d8d8),
@@ -34,13 +130,12 @@ class _TaskDetailState extends State<TaskDetail> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10.0), // This makes the button square
                 ),
-                
               ),
-            child: Container(
+              child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: 40.0,vertical: 7.0),
                   child: Text('Reject',
                     style: GoogleFonts.raleway(
-                         fontWeight: FontWeight.bold, fontSize: 14.0,
+                        fontWeight: FontWeight.bold, fontSize: 14.0,
                         color: const Color(0xFFc14143)),)),
             ),
           ),
@@ -53,9 +148,10 @@ class _TaskDetailState extends State<TaskDetail> {
                 )
               ],),
             child: TextButton(
-              onPressed: () {
+              onPressed: () async {
                 // Action to perform on button press
-                print('TextButton Pressed!');
+                var answer = await updateStatus(taskId,2);
+                print(answer);
               },
               style: TextButton.styleFrom(
                 backgroundColor: Color(0xFFcdf5dd), // Background color
@@ -73,7 +169,7 @@ class _TaskDetailState extends State<TaskDetail> {
             ),
           ),
         ],
-       );
+      );
     } else if (status == 'Started') {
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -88,9 +184,10 @@ class _TaskDetailState extends State<TaskDetail> {
                   )
                 ],),
               child: TextButton(
-                onPressed: () {
+                onPressed: () async {
                   // Action to perform on button press
-                  print('TextButton Pressed!');
+                  var answer = await updateStatusHistory(taskId,0,'users aborted the task','abort');
+                  print(answer);
                 },
                 style: TextButton.styleFrom(
                   backgroundColor: const Color(0xFFf9d8d8),
@@ -116,9 +213,10 @@ class _TaskDetailState extends State<TaskDetail> {
                   )
                 ],),
               child: TextButton(
-                onPressed: () {
+                onPressed: () async {
                   // Action to perform on button press
-                  print('TextButton Pressed!');
+                  var answer = await updateStatus(taskId,3);
+                  print(answer);
                 },
                 style: TextButton.styleFrom(
                   backgroundColor: Color(0xFFcdf5dd), // Background color
@@ -128,7 +226,7 @@ class _TaskDetailState extends State<TaskDetail> {
                   ),
                 ),
                 child: Container(
-                  margin: EdgeInsets.symmetric(horizontal: 40.0,vertical: 7.0),
+                    margin: EdgeInsets.symmetric(horizontal: 40.0,vertical: 7.0),
                     child: Text('Complete',
                       style: GoogleFonts.raleway(
                           fontWeight: FontWeight.bold, fontSize: 14.0,
@@ -136,7 +234,7 @@ class _TaskDetailState extends State<TaskDetail> {
               ),
             ),
           ],
-           );
+        );
     } else {
       return null;
     }
@@ -373,7 +471,7 @@ body: Padding(
             Container(
               margin: const EdgeInsets.fromLTRB(0, 60.0, 0, 0),
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: getButtons( args['status'])
+              child: getButtons( args['id'],args['status'])
             ),
           ],
         ),
